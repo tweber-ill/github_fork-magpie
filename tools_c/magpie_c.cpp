@@ -135,7 +135,7 @@ static t_E_and_S _calc_energies(t_magpie _mag,
 
 
 	// cache S(Q, E) values
-	if(dat->use_rtree)
+	if(dat->use_rtree && !ignore_weights)
 	{
 		std::lock_guard<std::mutex> _lck{dat->rtree_mutex};
 		dat->rtree_S.insert(std::make_tuple(rtree_vert, Es_and_S));
