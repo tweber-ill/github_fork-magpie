@@ -26,9 +26,16 @@
  */
 
 #include "libs/magdyn.h"
+#include "libs/maths.h"
 #include "magpie_c.h"
 
+#include <mutex>
 
+
+
+// ----------------------------------------------------------------------------
+// internals
+// ----------------------------------------------------------------------------
 // types
 using t_real = t_magpie_real;
 using t_cplx = std::complex<t_real>;
@@ -37,6 +44,14 @@ using t_vec = tl2::vec<t_cplx>;
 using t_mat_real = tl2::mat<t_real>;
 using t_vec_real = tl2::vec<t_real>;
 
+using t_E_and_S = std::vector<std::pair<t_real, t_real>>;
+
+// cache S(Q, E) results
+using t_rtree_vertex = boost::geometry::model::point<t_real, 3, boost::geometry::cs::cartesian>;
+using t_rtree_leaf = std::tuple<t_rtree_vertex, t_E_and_S>;
+using t_rtree = boost::geometry::index::rtree<t_rtree_leaf, boost::geometry::index::linear<16>>;
+
+// magpie core
 using t_magdyn = tl2_mag::MagDyn<
 	t_mat, t_vec,
 	t_mat_real, t_vec_real,
@@ -46,12 +61,103 @@ using t_magdyn = tl2_mag::MagDyn<
 
 
 /**
+ * main magpie data structure
+ */
+struct MagpieData
+{
+	// calculation core
+	t_magdyn mag;
+
+	// cache S(Q, E) results
+	t_rtree rtree_S{ };
+	t_real rtree_rlu_eps{ 1e-6 };
+	bool use_rtree{ true };
+	std::mutex rtree_mutex;
+};
+
+
+
+/**
+ * internal function to calculate E and S
+ */
+static t_E_and_S _calc_energies(t_magpie _mag,
+	t_real h, t_real k, t_real l, bool ignore_weights = false)
+{
+	if(!_mag)
+		return t_E_and_S{};
+
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+
+	t_vec_real Q_rlu = tl2::create<t_vec_real>({ h, k, l });
+
+
+	// look for cached S(Q, E) value
+	t_rtree_vertex rtree_vert;
+	if(dat->use_rtree)
+	{
+		tl2::to_geo_vertex<t_rtree_vertex, t_vec_real>(
+			rtree_vert, Q_rlu, std::make_index_sequence<3>());
+
+		std::vector<t_rtree_leaf> rtree_nearest;
+
+		{
+			std::lock_guard<std::mutex> _lck{dat->rtree_mutex};
+			dat->rtree_S.query(boost::geometry::index::nearest(rtree_vert, 1), std::back_inserter(rtree_nearest));
+		}
+
+		if(rtree_nearest.size() > 0)
+		{
+			t_vec_real nearest_point =
+				tl2::from_geo_vertex<t_vec_real, t_rtree_vertex>(
+					std::get<0>(rtree_nearest[0]), std::make_index_sequence<3>());
+
+			// use cached value if within epsilon distance
+			if(tl2::norm(Q_rlu - nearest_point) < dat->rtree_rlu_eps)
+			{
+				//std::cout << "Using cached value at Q = (" << h << ", " << k << ", " << l << ")." << std::endl;
+				return std::get<1>(rtree_nearest[0]);
+			}
+		}
+	}
+
+
+	// calculate energies and weights
+	const auto _Es_and_S = dat->mag.CalcEnergies(Q_rlu, ignore_weights).E_and_S;
+
+	t_E_and_S Es_and_S;
+	Es_and_S.reserve(_Es_and_S.size());
+
+	for(std::size_t branch_idx = 0; branch_idx < _Es_and_S.size(); ++branch_idx)
+	{
+		Es_and_S.emplace_back(std::make_pair(
+			_Es_and_S[branch_idx].E, _Es_and_S[branch_idx].weight_perp));
+	}
+
+
+	// cache S(Q, E) values
+	if(dat->use_rtree)
+	{
+		std::lock_guard<std::mutex> _lck{dat->rtree_mutex};
+		dat->rtree_S.insert(std::make_tuple(rtree_vert, Es_and_S));
+	}
+
+	return Es_and_S;
+}
+// ----------------------------------------------------------------------------
+
+
+
+// ----------------------------------------------------------------------------
+// external API functions
+// ----------------------------------------------------------------------------
+/**
  * initialise the magpie library
  */
 extern "C"
 t_magpie magpie_create()
 {
-	return new t_magdyn{};
+	MagpieData *dat = new MagpieData();
+	return dat;
 }
 
 
@@ -65,9 +171,23 @@ void magpie_free(t_magpie _mag)
 	if(!_mag)
 		return;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+	delete dat;
+}
 
-	delete mag;
+
+
+/**
+ * enable caching energies and weights
+ */
+extern "C"
+void magpie_use_cache(t_magpie _mag, int enable)
+{
+	if(!_mag)
+		return;
+
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+	dat->use_rtree = (enable != 0);
 }
 
 
@@ -81,9 +201,10 @@ int magpie_load(t_magpie _mag, const char* file)
 	if(!_mag)
 		return false;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
 
-	return mag->Load(file);
+	dat->rtree_S.clear();
+	return dat->mag.Load(file);
 }
 
 
@@ -97,9 +218,9 @@ unsigned int magpie_site_count(t_magpie _mag)
 	if(!_mag)
 		return 0;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
 
-	return static_cast<unsigned int>(mag->GetMagneticSitesCount());
+	return static_cast<unsigned int>(dat->mag.GetMagneticSitesCount());
 }
 
 
@@ -113,15 +234,15 @@ unsigned int magpie_branch_count(t_magpie _mag)
 	if(!_mag)
 		return 0;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
 
 	// each magnetic site leads to a magnon branch
-	std::size_t max_branch_count = mag->GetMagneticSitesCount();
+	std::size_t max_branch_count = dat->mag.GetMagneticSitesCount();
 
 	// include magnon creation and annihilation
 	max_branch_count *= 2;
 
-	if(mag->IsIncommensurate())
+	if(dat->mag.IsIncommensurate())
 	{
 		// include non-commensurate structures
 		max_branch_count *= 3;
@@ -143,19 +264,18 @@ unsigned int magpie_calc_energies(t_magpie _mag,
 	if(!_mag)
 		return 0;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+	const t_E_and_S Es_and_S = _calc_energies(_mag, h, k, l, !ws);
 
-	const auto Es_and_S = mag->CalcEnergies(h, k, l, !ws);
-
-	const std::size_t max_branches = 2*mag->GetMagneticSitesCount();
+	const std::size_t max_branches = 2*dat->mag.GetMagneticSitesCount();
 	const std::size_t num_branches = std::min(Es_and_S.size(), max_branches);
 
 	for(std::size_t branch_idx = 0; branch_idx < num_branches; ++branch_idx)
 	{
 		if(Es)
-			Es[branch_idx] = Es_and_S[branch_idx].E;
+			Es[branch_idx] = Es_and_S[branch_idx].first;
 		if(ws)
-			ws[branch_idx] = Es_and_S[branch_idx].weight_perp;
+			ws[branch_idx] = Es_and_S[branch_idx].second;
 	}
 
 	return static_cast<unsigned int>(num_branches);
@@ -174,15 +294,13 @@ t_real magpie_calc_S(t_magpie _mag,
 	if(!_mag)
 		return 0;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
-
-	const auto Es_and_S = mag->CalcEnergies(h, k, l, false);
+	const t_E_and_S Es_and_S = _calc_energies(_mag, h, k, l, false);
 
 	t_real S = 0.;
 	for(std::size_t branch_idx = 0; branch_idx < Es_and_S.size(); ++branch_idx)
 	{
-		const t_real E_branch = Es_and_S[branch_idx].E;
-		const t_real S_branch = Es_and_S[branch_idx].weight_perp;
+		const t_real E_branch = Es_and_S[branch_idx].first;
+		const t_real S_branch = Es_and_S[branch_idx].second;
 
 		S += S_branch * tl2::gauss_model(E, E_branch, sigma, 1., 0.);
 	}
@@ -197,7 +315,7 @@ t_real magpie_calc_S(t_magpie _mag,
  */
 extern "C"
 int magpie_save_dispersion(t_magpie _mag,
-  const char* file,
+	const char* file,
 	t_real h0, t_real k0, t_real l0,
 	t_real h1, t_real k1, t_real l1,
 	unsigned int num_pts)
@@ -205,6 +323,7 @@ int magpie_save_dispersion(t_magpie _mag,
 	if(!_mag)
 		return false;
 
-	t_magdyn *mag = reinterpret_cast<t_magdyn*>(_mag);
-	return mag->SaveDispersion(file, h0, k0, l0, h1, k1, l1, num_pts);
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+	return dat->mag.SaveDispersion(file, h0, k0, l0, h1, k1, l1, num_pts);
 }
+// ----------------------------------------------------------------------------

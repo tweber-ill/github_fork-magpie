@@ -30,7 +30,7 @@
 #define __MAGDYN_C__
 
 
-typedef void* t_magpie;
+typedef void*  t_magpie;
 typedef double t_magpie_real;
 
 
@@ -47,6 +47,9 @@ void magpie_free(t_magpie _mag);
 
 // load a magnetic model
 int magpie_load(t_magpie _mag, const char* file);
+
+// enable caching energies and weights
+void magpie_use_cache(t_magpie _mag, int enable);
 
 // count the number of sites in the current magnetic model
 unsigned int magpie_site_count(t_magpie _mag);
