@@ -193,8 +193,8 @@ public:
 	const ExchangeTerm& GetExchangeTerm(t_size idx) const;
 
 	bool IsIncommensurate() const;
-	bool GetSilent() const;
 	bool GetPerformChecks() const;
+	bool GetSilent() const;
 
 	/**
 	 * get number of magnetic sites with the given name (to check if the name is unique)

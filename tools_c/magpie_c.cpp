@@ -157,6 +157,10 @@ extern "C"
 t_magpie magpie_create()
 {
 	MagpieData *dat = new MagpieData();
+
+	dat->mag.SetPerformChecks(false);
+	dat->mag.SetSilent(false);
+
 	return dat;
 }
 
