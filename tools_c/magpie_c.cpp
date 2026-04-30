@@ -114,7 +114,7 @@ static t_E_and_S _calc_energies(t_magpie _mag,
 			// use cached value if within epsilon distance
 			if(tl2::norm(Q_rlu - nearest_point) < dat->rtree_rlu_eps)
 			{
-				std::cout << "Using cached value at Q = (" << h << ", " << k << ", " << l << ")." << std::endl;
+				//std::cout << "Using cached value at Q = (" << h << ", " << k << ", " << l << ")." << std::endl;
 				return std::get<1>(rtree_nearest[0]);
 			}
 		}
