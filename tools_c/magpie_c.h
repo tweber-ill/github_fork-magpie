@@ -57,6 +57,14 @@ unsigned int magpie_site_count(t_magpie _mag);
 // get the maximum number of magnon branches in the current magnetic model
 unsigned int magpie_branch_count(t_magpie _mag);
 
+// set temperature
+void magpie_set_temperature(t_magpie _mag, t_magpie_real T);
+
+// set external magnetic field of strength B along [Bx, By, Bz]
+void magpie_set_field(t_magpie _mag, t_magpie_real B,
+	t_magpie_real Bx, t_magpie_real By, t_magpie_real Bz,
+	int align_spins, int keep_signs);
+
 // calculate the energies and spin-spin correlation at the point Q = (hkl)
 unsigned int magpie_calc_energies(t_magpie _mag,
 	t_magpie_real h, t_magpie_real k, t_magpie_real l,

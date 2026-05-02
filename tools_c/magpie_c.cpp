@@ -258,6 +258,43 @@ unsigned int magpie_branch_count(t_magpie _mag)
 
 
 /**
+ * set temperature
+ */
+extern "C"
+void magpie_set_temperature(t_magpie _mag, t_real T)
+{
+	if(!_mag)
+		return;
+
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+	dat->mag.SetTemperature(T);
+}
+
+
+
+/**
+ * set external magnetic field
+ */
+void magpie_set_field(t_magpie _mag, t_real B,
+	t_real Bx, t_real By, t_real Bz,
+	int align_spins, int keep_signs)
+{
+	if(!_mag)
+		return;
+
+	typename t_magdyn::ExternalField field{};
+	field.mag = B;
+	field.dir = tl2::create<t_vec_real>({ Bx, By, Bz });
+	field.align_spins = (align_spins != 0);
+	field.keep_signs = (keep_signs != 0);
+
+	MagpieData *dat = reinterpret_cast<MagpieData*>(_mag);
+	dat->mag.SetExternalField(field);
+}
+
+
+
+/**
  * calculate the energies and spin-spin correlation at the point Q = (hkl)
  */
 extern "C"
