@@ -275,6 +275,7 @@ void magpie_set_temperature(t_magpie _mag, t_real T)
 /**
  * set external magnetic field
  */
+extern "C"
 void magpie_set_field(t_magpie _mag, t_real B,
 	t_real Bx, t_real By, t_real Bz,
 	int align_spins, int keep_signs)
