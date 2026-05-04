@@ -161,6 +161,26 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 	tl2::niceprint(std::cout, boson_ops, 1e-4, 4);
 #endif
 
+	// calculate form factors per site (or uniformly for all if only one is given)
+	std::vector<t_cplx> ffacts;
+	ffacts.reserve(N);
+	std::vector<tl2::ExprParser<t_cplx>> magffacts = m_magffacts;
+	for(t_size site_idx = 0; site_idx < std::min(N, magffacts.size()); ++site_idx)
+	{
+		// get |Q| in units of A^(-1)
+		t_vec_real Q_invA = m_xtalB * S.Q_rlu;
+		t_real Q_abs = tl2::norm<t_vec_real>(Q_invA);
+
+		// evaluate form factor expression
+		magffacts[site_idx].register_var("Q", Q_abs);
+		magffacts[site_idx].register_var("Q2", Q_abs*Q_abs);
+		magffacts[site_idx].register_var("s", Q_abs / (2.*s_twopi));
+		magffacts[site_idx].register_var("s2", std::pow(Q_abs / (2.*s_twopi), 2.));
+		ffacts.push_back(magffacts[site_idx].eval_noexcept());
+
+		//std::cout << "ffact(Q = |" << S.Q_rlu << "| rlu = " << Q_abs << " / A) = " << ffacts[site_idx] << std::endl;
+	}
+
 	// building the spin correlation functions of equation (47) from (Toth 2015)
 	for(std::uint8_t x_idx = 0; x_idx < 3; ++x_idx)
 	for(std::uint8_t y_idx = 0; y_idx < 3; ++y_idx)
@@ -177,6 +197,19 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 			const t_vec& u_i = s_i.ge_trafo_plane_calc;
 			const t_vec& uc_i = s_i.ge_trafo_plane_conj_calc;
 
+			// magnetic form factor for site i
+			t_cplx ffact_i = 1., ffactc_i = 1.;
+			if(i < ffacts.size())
+			{
+				ffact_i = ffacts[i];
+				ffactc_i = std::conj(ffacts[i]);
+			}
+			else if(i >= ffacts.size() && ffacts.size() == 1)
+			{
+				ffact_i = ffacts[0];
+				ffactc_i = std::conj(ffacts[0]);
+			}
+
 			for(t_size j = 0; j < N; ++j)
 			{
 				// get the inner site
@@ -186,16 +219,29 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 				const t_vec& u_j = s_j.ge_trafo_plane_calc;
 				const t_vec& uc_j = s_j.ge_trafo_plane_conj_calc;
 
+				// magnetic form factor for site j
+				t_cplx ffact_j = 1., ffactc_j = 1.;
+				if(j < ffacts.size())
+				{
+					ffact_j = ffacts[j];
+					ffactc_j = std::conj(ffacts[j]);
+				}
+				else if(j >= ffacts.size() && ffacts.size() == 1)
+				{
+					ffact_j = ffacts[0];
+					ffactc_j = std::conj(ffacts[0]);
+				}
+
 				// pre-factors of equation (44) from (Toth 2015)
 				const t_real S_mag = std::sqrt(s_i.spin_mag_calc * s_j.spin_mag_calc);
 				const t_cplx phase = std::exp(-m_phase_sign * s_imag * s_twopi *
 					tl2::inner<t_vec_real>(s_j.pos_calc - s_i.pos_calc, S.Q_rlu));
 
 				// matrix elements of equation (44) from (Toth 2015)
-				M(    i,     j) = phase * S_mag * u_i[x_idx]  * uc_j[y_idx];  // b_i+ b_j terms
-				M(    i, N + j) = phase * S_mag * u_i[x_idx]  * u_j[y_idx];   // b_i+ b_j+ terms
-				M(N + i,     j) = phase * S_mag * uc_i[x_idx] * uc_j[y_idx];  // b_i b_j terms
-				M(N + i, N + j) = phase * S_mag * uc_i[x_idx] * u_j[y_idx];   // b_i b_j+ terms
+				M(    i,     j) = ffact_i * ffactc_j  * phase * S_mag * u_i[x_idx]  * uc_j[y_idx];  // b_i+ b_j terms
+				M(    i, N + j) = ffact_i * ffact_j   * phase * S_mag * u_i[x_idx]  * u_j[y_idx];   // b_i+ b_j+ terms
+				M(N + i,     j) = ffactc_i * ffactc_j * phase * S_mag * uc_i[x_idx] * uc_j[y_idx];  // b_i b_j terms
+				M(N + i, N + j) = ffactc_i * ffact_j  * phase * S_mag * uc_i[x_idx] * u_j[y_idx];   // b_i b_j+ terms
 			}  // end of inner site iteration
 		}  // end of outer site iteration
 
@@ -224,31 +270,12 @@ MAGDYN_TEMPL
 void MAGDYN_INST::CalcIntensities(MAGDYN_TYPE::SofQE& S) const
 {
 	using namespace tl2_ops;
-	tl2::ExprParser<t_cplx> magffact = m_magffact;
 
 	for(EnergyAndWeight& E_and_S : S.E_and_S)
 	{
 		// apply bose factor
 		if(m_temperature >= 0.)
 			E_and_S.S *= tl2::bose_cutoff(E_and_S.E, m_temperature, m_bose_cutoff);
-
-		// apply form factor
-		if(m_magffact_formula != "")
-		{
-			// get |Q| in units of A^(-1)
-			t_vec_real Q_invA = m_xtalB * S.Q_rlu;
-			t_real Q_abs = tl2::norm<t_vec_real>(Q_invA);
-
-			// evaluate form factor expression
-			magffact.register_var("Q", Q_abs);
-			magffact.register_var("Q2", Q_abs*Q_abs);
-			magffact.register_var("s", Q_abs / (2.*s_twopi));
-			magffact.register_var("s2", std::pow(Q_abs / (2.*s_twopi), 2.));
-			t_cplx ffact = magffact.eval_noexcept();
-			E_and_S.S *= ffact * std::conj(ffact);
-
-			//std::cout << "ffact(Q = |" << S.Q_rlu << "| rlu = " << Q_abs << " / A) = " << ffact << std::endl;
-		}
 
 		// apply orthogonal projector for magnetic neutron scattering,
 		// see (Shirane 2002), p. 37, equation (2.64)

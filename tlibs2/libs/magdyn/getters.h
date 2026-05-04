@@ -49,7 +49,8 @@ MAGDYN_TEMPL void MAGDYN_INST::Clear()
 	m_temperature = -1.;
 
 	// clear form factor
-	m_magffact_formula = "";
+	m_magffact_formulas.clear();
+	m_magffacts.clear();
 
 	// clear ordering wave vector
 	m_ordering = tl2::zero<t_vec_real>(3);
@@ -191,9 +192,11 @@ MAGDYN_TEMPL t_real MAGDYN_INST::GetBoseCutoffEnergy() const
 }
 
 
-MAGDYN_TEMPL const std::string& MAGDYN_INST::GetMagneticFormFactor() const
+MAGDYN_TEMPL const std::string& MAGDYN_INST::GetMagneticFormFactor(t_size site) const
 {
-	return m_magffact_formula;
+	if(site >= m_magffact_formulas.size())
+		return "";
+	return m_magffact_formulas[site];
 }
 
 
@@ -506,26 +509,32 @@ MAGDYN_TEMPL void MAGDYN_INST::SetCholeskyInc(t_real delta)
 
 
 
-MAGDYN_TEMPL void MAGDYN_INST::SetMagneticFormFactor(const std::string& ffact)
+MAGDYN_TEMPL void MAGDYN_INST::SetMagneticFormFactor(const std::string& ffact, t_size site)
 {
-	m_magffact_formula = ffact;
-	if(m_magffact_formula == "")
+	if(site >= m_magffact_formulas.size())
+	{
+		m_magffact_formulas.resize(site);
+		m_magffacts.resize(site);
+	}
+	
+	m_magffact_formulas[site] = ffact;
+	if(m_magffact_formulas[site] == "")
 		return;
 
 	// parse the given formula
-	m_magffact = GetExprParser();
-	m_magffact.SetInvalid0(false);
-	m_magffact.register_var("Q", 0.);
-	m_magffact.register_var("Q2", 0.);
-	m_magffact.register_var("s", 0.);
-	m_magffact.register_var("s2", 0.);
+	m_magffacts[site] = GetExprParser();
+	m_magffacts[site].SetInvalid0(false);
+	m_magffacts[site].register_var("Q", 0.);
+	m_magffacts[site].register_var("Q2", 0.);
+	m_magffacts[site].register_var("s", 0.);
+	m_magffacts[site].register_var("s2", 0.);
 
-	if(!m_magffact.parse_noexcept(ffact))
+	if(!m_magffacts[site].parse_noexcept(ffact))
 	{
-		m_magffact_formula = "";
+		m_magffact_formulas[site] = "";
 
 		TL2_CERR_OPT << "Magdyn error: Magnetic form facor formula: \""
-			<< ffact << "\" could not be parsed."
+			<< ffact << "\" for site " << site << " could not be parsed."
 			<< std::endl;
 	}
 }
@@ -546,8 +555,7 @@ MAGDYN_TEMPL void MAGDYN_INST::SetExternalField(const MAGDYN_TYPE::ExternalField
 
 MAGDYN_TEMPL void MAGDYN_INST::RotateExternalField(const t_vec_real& axis, t_real angle)
 {
-	const t_mat_real rot = tl2::rotation<t_mat_real, t_vec_real>(
-		axis, angle, false);
+	const t_mat_real rot = tl2::rotation<t_mat_real, t_vec_real>(axis, angle, false);
 	m_field.dir = rot * m_field.dir;
 }
 

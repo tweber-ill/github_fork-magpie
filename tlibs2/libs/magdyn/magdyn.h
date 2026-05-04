@@ -183,7 +183,7 @@ public:
 	t_real GetTemperature() const;
 	t_real GetBoseCutoffEnergy() const;
 
-	const std::string& GetMagneticFormFactor() const;
+	const std::string& GetMagneticFormFactor(t_size site = 0) const;
 
 	const t_mat_real& GetCrystalATrafo() const;
 	const t_mat_real& GetCrystalBTrafo() const;
@@ -246,7 +246,7 @@ public:
 	void SetCholeskyMaxTries(t_size max_tries);
 	void SetCholeskyInc(t_real delta);
 
-	void SetMagneticFormFactor(const std::string& ffact);
+	void SetMagneticFormFactor(const std::string& ffact, t_size site = 0);
 
 	void SetExternalField(const ExternalField& field);
 	void RotateExternalField(const t_vec_real& axis, t_real angle);
@@ -690,8 +690,8 @@ private:
 	t_real m_bose_cutoff{ 0.025 };
 
 	// formula for the magnetic form factor
-	std::string m_magffact_formula{};
-	tl2::ExprParser<t_cplx> m_magffact{};
+	std::vector<std::string> m_magffact_formulas{};
+	std::vector<tl2::ExprParser<t_cplx>> m_magffacts{};
 
 	// crystal lattice
 	t_real m_xtallattice[3]{ 5., 5., 5. };
