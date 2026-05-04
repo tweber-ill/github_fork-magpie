@@ -241,8 +241,13 @@ void MAGDYN_INST::CalcIntensities(MAGDYN_TYPE::SofQE& S) const
 
 			// evaluate form factor expression
 			magffact.register_var("Q", Q_abs);
-			t_real ffact = magffact.eval_noexcept().real();
-			E_and_S.S *= ffact;
+			magffact.register_var("Q2", Q_abs*Q_abs);
+			magffact.register_var("s", Q_abs / (2.*s_twopi));
+			magffact.register_var("s2", std::pow(Q_abs / (2.*s_twopi), 2.));
+			t_cplx ffact = magffact.eval_noexcept();
+			E_and_S.S *= ffact * std::conj(ffact);
+
+			//std::cout << "ffact(Q = |" << S.Q_rlu << "| rlu = " << Q_abs << " / A) = " << ffact << std::endl;
 		}
 
 		// apply orthogonal projector for magnetic neutron scattering,

@@ -50,8 +50,7 @@ void MagDynDlg::CreateSitesPanel()
 	m_sitestab->setSelectionMode(QTableWidget::ContiguousSelection);
 	m_sitestab->setContextMenuPolicy(Qt::CustomContextMenu);
 
-	m_sitestab->verticalHeader()->setDefaultSectionSize(
-		fontMetrics().lineSpacing()*1.25 + 4);
+	m_sitestab->verticalHeader()->setDefaultSectionSize(fontMetrics().lineSpacing()*1.25 + 4);
 	m_sitestab->verticalHeader()->setVisible(true);
 
 	m_sitestab->setColumnCount(NUM_SITE_COLS);
@@ -637,8 +636,15 @@ void MagDynDlg::CreateSamplePanel()
 	m_scatteringplane[0]->setValue(1);
 	m_scatteringplane[4]->setValue(1);
 
-	// form factor
+	// magnetic form factor
 	m_ffact = new QPlainTextEdit(m_samplepanel);
+
+	QPushButton *btn_ffact_j0 = new QPushButton("<j0> Term", m_samplepanel);
+	btn_ffact_j0->setToolTip("Add a template <j0> term.");
+	btn_ffact_j0->setFocusPolicy(Qt::StrongFocus);
+	QPushButton *btn_ffact_j2 = new QPushButton("<j0> && <j2> Terms", m_samplepanel);
+	btn_ffact_j2->setToolTip("Add a template <j0> and <j2> terms.");
+	btn_ffact_j2->setFocusPolicy(Qt::StrongFocus);
 
 
 	QGridLayout *grid = new QGridLayout(m_samplepanel);
@@ -697,10 +703,12 @@ void MagDynDlg::CreateSamplePanel()
 		QSizePolicy::Minimum, QSizePolicy::Fixed),
 		y++, 0, 1, 1);
 
-	// form factor formula
+	// magnetic form factor formula
 	grid->addWidget(new QLabel("Magnetic Form Factor", m_samplepanel), y++, 0, 1, 4);
-	grid->addWidget(new QLabel("Enter Formula, f_M(Q) = ", m_samplepanel), y++, 0, 1, 1);
+	grid->addWidget(new QLabel("Enter Formula, f_M(Q or s) = ", m_samplepanel), y++, 0, 1, 1);
 	grid->addWidget(m_ffact, y++, 0, 1, 4);
+	grid->addWidget(btn_ffact_j0, y, 2, 1, 1);
+	grid->addWidget(btn_ffact_j2, y++, 3, 1, 1);
 
 	grid->addItem(new QSpacerItem(8, 8,
 		QSizePolicy::Minimum, QSizePolicy::Expanding),
@@ -752,6 +760,19 @@ void MagDynDlg::CreateSamplePanel()
 			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
 			calc_all);
 	}
+
+	// magnetic form factors
+	connect(btn_ffact_j0, &QPushButton::clicked, [this]()
+	{
+		// for formula and coefficients, see: https://mcphase.github.io/webpage/manual/node164.html .
+		m_ffact->setPlainText("A*exp(-a*s2) + B*exp(-b*s2) + C*exp(-c*s2) + D");
+	});
+	connect(btn_ffact_j2, &QPushButton::clicked, [this]()
+	{
+		// for formula and coefficients, see: https://mcphase.github.io/webpage/manual/node164.html .
+		m_ffact->setPlainText("A0*exp(-a0*s2) + B0*exp(-b0*s2) + C0*exp(-c0*s2) + D0 +\n"
+			"(A2*exp(-a2*s2) + B2*exp(-b2*s2) + C2*exp(-c2*s2) + D2) * (2/g - 1) * s2");
+	});
 
 	m_tabs_setup->addTab(m_samplepanel, "Crystal");
 }

@@ -516,6 +516,9 @@ MAGDYN_TEMPL void MAGDYN_INST::SetMagneticFormFactor(const std::string& ffact)
 	m_magffact = GetExprParser();
 	m_magffact.SetInvalid0(false);
 	m_magffact.register_var("Q", 0.);
+	m_magffact.register_var("Q2", 0.);
+	m_magffact.register_var("s", 0.);
+	m_magffact.register_var("s2", 0.);
 
 	if(!m_magffact.parse_noexcept(ffact))
 	{
