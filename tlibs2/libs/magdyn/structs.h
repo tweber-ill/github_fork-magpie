@@ -70,7 +70,7 @@ struct t_MagneticSite
 	// input properties
 	std::string name{};          // identifier
 	t_size sym_idx{};            // groups positions belonging to the same symmetry group (0: none)
-	t_size ffact_idx{0};         // which of the given form factors to use?
+	std::optional<t_size> ffact_idx{};  // which of the given form factors to use?
 
 	t_strarr3 pos{};             // magnetic site position
 

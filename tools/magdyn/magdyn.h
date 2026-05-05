@@ -310,15 +310,11 @@ protected:
 
 	// add a site to the table
 	void AddSiteTabItem(int row = -1,
-		const std::string& name = "", t_size sym_idx = 0,
+		const std::string& name = "", t_size sym_idx = 0, t_size ffact_idx = 0,
 		const std::string& x = "0", const std::string& y = "0", const std::string& z = "0",
-		const std::string& sx = "0",
-		const std::string& sy = "0",
-		const std::string& sz = "1",
-		const std::string&  S = "1",
-		const std::string& sox = "auto",
-		const std::string& soy = "auto",
-		const std::string& soz = "auto",
+		const std::string& sx = "0", const std::string& sy = "0", const std::string& sz = "1",
+		const std::string& S = "1",
+		const std::string& sox = "auto", const std::string& soy = "auto", const std::string& soz = "auto",
 		const std::string& rgb = "auto");
 
 	// add a coupling to the table

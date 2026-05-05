@@ -36,6 +36,7 @@
 // types
 using t_numitem = tl2::NumericTableWidgetItem<t_real>;
 using t_sizeitem = tl2::NumericTableWidgetItem<t_size>;
+using t_intitem = tl2::NumericTableWidgetItem<int>;
 
 
 
@@ -90,7 +91,7 @@ static void set_unique_tab_item_name(
  * add an atom site
  */
 void MagDynDlg::AddSiteTabItem(
-	int row, const std::string& name, t_size sym_idx,
+	int row, const std::string& name, t_size sym_idx, t_size ffact_idx,
 	const std::string& x, const std::string& y, const std::string& z,
 	const std::string& sx, const std::string& sy, const std::string& sz,
 	const std::string& S,
@@ -145,6 +146,7 @@ void MagDynDlg::AddSiteTabItem(
 		m_sitestab->setItem(row, COL_SITE_SPIN_Y, new t_numitem(sy));
 		m_sitestab->setItem(row, COL_SITE_SPIN_Z, new t_numitem(sz));
 		m_sitestab->setItem(row, COL_SITE_SPIN_MAG, new t_numitem(S));
+		m_sitestab->setItem(row, COL_SITE_FORMFACT_IDX, new t_intitem(ffact_idx));
 		m_sitestab->setItem(row, COL_SITE_RGB, new QTableWidgetItem(rgb.c_str()));
 		if(m_allow_ortho_spin)
 		{

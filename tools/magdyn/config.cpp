@@ -585,7 +585,7 @@ bool MagDynDlg::ImportStructure(const QString& filename)
 				std::string ReMz = nucl.second.get<std::string>("ReMz", "1");
 				std::string rgb = nucl.second.get<std::string>("col", /*"auto"*/ rndcol);
 
-				AddSiteTabItem(-1, name, 0,
+				AddSiteTabItem(-1, name, 0, 0,
 					x, y, z,
 				   ReMx, ReMy, ReMz, M_mag,
 				   "auto", "auto", "auto",
@@ -719,7 +719,7 @@ bool MagDynDlg::ImportCIF(const QString& filename)
 				t_vec_real& pos = generatedatoms[atomnum][symnum];
 				pos = tl2::keep_atom_in_uc<t_vec_real>(pos, 3, uc_min, uc_max);
 
-				AddSiteTabItem(-1, name, 0,
+				AddSiteTabItem(-1, name, 0, 0,
 					tl2::var_to_str(pos[0], g_prec),  // pos.x
 					tl2::var_to_str(pos[1], g_prec),  // pos.y
 					tl2::var_to_str(pos[2], g_prec),  // pos.z

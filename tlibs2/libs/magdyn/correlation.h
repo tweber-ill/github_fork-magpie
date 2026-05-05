@@ -219,10 +219,10 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 
 			// magnetic form factor for site i
 			t_cplx ffact_i = 1., ffactc_i = 1.;
-			if(s_i.ffact_idx < ffacts.size())
+			if(s_i.ffact_idx && *s_i.ffact_idx < ffacts.size())
 			{
-				ffact_i = ffacts[s_i.ffact_idx];
-				ffactc_i = std::conj(ffacts[s_i.ffact_idx]);
+				ffact_i = ffacts[*s_i.ffact_idx];
+				ffactc_i = std::conj(ffacts[*s_i.ffact_idx]);
 			}
 
 			for(t_size j = 0; j < N; ++j)
@@ -236,10 +236,10 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 
 				// magnetic form factor for site j
 				t_cplx ffact_j = 1., ffactc_j = 1.;
-				if(s_j.ffact_idx < ffacts.size())
+				if(s_j.ffact_idx && *s_j.ffact_idx < ffacts.size())
 				{
-					ffact_j = ffacts[s_j.ffact_idx];
-					ffactc_j = std::conj(ffacts[s_j.ffact_idx]);
+					ffact_j = ffacts[*s_j.ffact_idx];
+					ffactc_j = std::conj(ffacts[*s_j.ffact_idx]);
 				}
 
 				// pre-factors of equation (44) from (Toth 2015)

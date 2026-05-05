@@ -63,6 +63,7 @@ enum : int
 	COL_SITE_SYM_IDX,                                  // symmetry index
 	COL_SITE_SPIN_X, COL_SITE_SPIN_Y, COL_SITE_SPIN_Z, // spin direction
 	COL_SITE_SPIN_MAG,                                 // spin magnitude
+	COL_SITE_FORMFACT_IDX,                             // index to the form factor formula
 	COL_SITE_RGB,                                      // colour
 	COL_SITE_SPIN_ORTHO_X, COL_SITE_SPIN_ORTHO_Y, COL_SITE_SPIN_ORTHO_Z,
 

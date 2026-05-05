@@ -181,7 +181,10 @@ bool MAGDYN_INST::Load(const boost::property_tree::ptree& node)
 			});
 
 			magnetic_site.sym_idx = site.second.get<t_size>("symmetry_index", 0);
-			magnetic_site.ffact_idx = site.second.get<t_size>("magnetic_form_factor_index", 0);
+			if(int ffact_idx = site.second.get<int>("magnetic_form_factor_index", 0); ffact_idx >= 0)
+				magnetic_site.ffact_idx = ffact_idx;
+			else
+				magnetic_site.ffact_idx = std::nullopt;
 
 			magnetic_site.pos[0] = site.second.get<std::string>("position_x", "0");
 			magnetic_site.pos[1] = site.second.get<std::string>("position_y", "0");
@@ -479,7 +482,10 @@ bool MAGDYN_INST::Save(boost::property_tree::ptree& node) const
 		itemNode.put<std::string>("position_z", site.pos[2]);
 
 		itemNode.put<t_size>("symmetry_index", site.sym_idx);
-		itemNode.put<t_size>("magnetic_form_factor_index", site.ffact_idx);
+		if(site.ffact_idx)
+			itemNode.put<t_size>("magnetic_form_factor_index", *site.ffact_idx);
+		else
+			itemNode.put<int>("magnetic_form_factor_index", -1);
 
 		itemNode.put<std::string>("spin_x", site.spin_dir[0]);
 		itemNode.put<std::string>("spin_y", site.spin_dir[1]);

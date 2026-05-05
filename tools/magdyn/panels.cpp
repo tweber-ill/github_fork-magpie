@@ -64,6 +64,7 @@ void MagDynDlg::CreateSitesPanel()
 	m_sitestab->setHorizontalHeaderItem(COL_SITE_SPIN_Y, new QTableWidgetItem{"Spin y"});
 	m_sitestab->setHorizontalHeaderItem(COL_SITE_SPIN_Z, new QTableWidgetItem{"Spin z"});
 	m_sitestab->setHorizontalHeaderItem(COL_SITE_SPIN_MAG, new QTableWidgetItem{"Spin |S|"});
+	m_sitestab->setHorizontalHeaderItem(COL_SITE_FORMFACT_IDX, new QTableWidgetItem{"f_M Idx."});
 	m_sitestab->setHorizontalHeaderItem(COL_SITE_RGB, new QTableWidgetItem{"Colour"});
 
 	if(m_allow_ortho_spin)
@@ -86,6 +87,7 @@ void MagDynDlg::CreateSitesPanel()
 	m_sitestab->setColumnWidth(COL_SITE_SPIN_Y, 80);
 	m_sitestab->setColumnWidth(COL_SITE_SPIN_Z, 80);
 	m_sitestab->setColumnWidth(COL_SITE_SPIN_MAG, 80);
+	m_sitestab->setColumnWidth(COL_SITE_FORMFACT_IDX, 80);
 	m_sitestab->setColumnWidth(COL_SITE_RGB, 80);
 
 	if(m_allow_ortho_spin)

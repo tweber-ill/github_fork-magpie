@@ -104,7 +104,7 @@ void MagDynDlg::SyncSitesFromKernel(boost::optional<const pt::ptree&> extra_info
 			spin_ortho_z = "auto";
 
 		AddSiteTabItem(-1,
-			site.name, site.sym_idx,
+			site.name, site.sym_idx, *site.ffact_idx,
 			site.pos[0], site.pos[1], site.pos[2],
 			site.spin_dir[0], site.spin_dir[1], site.spin_dir[2], site.spin_mag,
 			spin_ortho_x, spin_ortho_y, spin_ortho_z,
@@ -233,6 +233,7 @@ void MagDynDlg::SyncToKernel()
 {
 	using t_numitem = tl2::NumericTableWidgetItem<t_real>;
 	using t_sizeitem = tl2::NumericTableWidgetItem<t_size>;
+	using t_intitem = tl2::NumericTableWidgetItem<int>;
 
 	if(m_ignoreCalc)
 		return;
@@ -331,6 +332,7 @@ void MagDynDlg::SyncToKernel()
 		auto *spin_y = static_cast<t_numitem*>(m_sitestab->item(row, COL_SITE_SPIN_Y));
 		auto *spin_z = static_cast<t_numitem*>(m_sitestab->item(row, COL_SITE_SPIN_Z));
 		auto *spin_mag = static_cast<t_numitem*>(m_sitestab->item(row, COL_SITE_SPIN_MAG));
+		auto *ffact_idx = static_cast<t_intitem*>(m_sitestab->item(row, COL_SITE_FORMFACT_IDX));
 
 		t_numitem *spin_ortho_x = nullptr;
 		t_numitem *spin_ortho_y = nullptr;
@@ -343,7 +345,7 @@ void MagDynDlg::SyncToKernel()
 		}
 
 		if(!name || !pos_x || !pos_y || !pos_z || !sym_idx ||
-			!spin_x || !spin_y || !spin_z || !spin_mag)
+			!spin_x || !spin_y || !spin_z || !spin_mag || !ffact_idx)
 		{
 			std::cerr << "Invalid entry in sites table row "
 				<< row << "." << std::endl;
@@ -362,6 +364,10 @@ void MagDynDlg::SyncToKernel()
 		site.pos[2] = pos_z->text().toStdString();
 
 		site.sym_idx = sym_idx->GetValue();
+		if(int _ffact_idx = ffact_idx->GetValue(); _ffact_idx >= 0)
+			site.ffact_idx = _ffact_idx;
+		else
+			site.ffact_idx = std::nullopt;
 
 		site.spin_mag = spin_mag->text().toStdString();
 		site.spin_dir[0] = spin_x->text().toStdString();

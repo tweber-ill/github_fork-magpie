@@ -393,6 +393,7 @@ void MagDynDlg::ImportAtoms(const std::vector<TableImportAtom>& atompos_vec,
 		std::string S[3] = { "0", "0", "1" };
 		std::string Smag = "1";
 		t_size sym_idx = 0;  // TODO
+		t_size ffact_idx = 0;
 
 		for(std::size_t i = 0; i < 3; ++i)
 		{
@@ -402,7 +403,7 @@ void MagDynDlg::ImportAtoms(const std::vector<TableImportAtom>& atompos_vec,
 				Smag = atompos.Smag;
 		}
 
-		AddSiteTabItem(-1, atompos.name, sym_idx,
+		AddSiteTabItem(-1, atompos.name, sym_idx, ffact_idx,
 			atompos.pos[0], atompos.pos[1], atompos.pos[2],
 			S[0], S[1], S[2], Smag);
 	}
