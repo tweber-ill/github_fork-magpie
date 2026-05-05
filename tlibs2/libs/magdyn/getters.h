@@ -193,9 +193,17 @@ MAGDYN_TEMPL t_real MAGDYN_INST::GetBoseCutoffEnergy() const
 
 MAGDYN_TEMPL const std::string& MAGDYN_INST::GetMagneticFormFactor(t_size site) const
 {
+	static std::string empty = "";
 	if(site >= m_magffacts.size())
-		return "";
+		return empty;
+
 	return m_magffacts[site].GetExprString();
+}
+
+
+MAGDYN_TEMPL t_size MAGDYN_INST::GetMagneticFormFactorCount() const
+{
+	return m_magffacts.size();
 }
 
 

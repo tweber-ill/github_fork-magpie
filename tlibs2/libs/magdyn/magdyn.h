@@ -184,6 +184,7 @@ public:
 	t_real GetBoseCutoffEnergy() const;
 
 	const std::string& GetMagneticFormFactor(t_size site = 0) const;
+	t_size GetMagneticFormFactorCount() const;
 
 	const t_mat_real& GetCrystalATrafo() const;
 	const t_mat_real& GetCrystalBTrafo() const;

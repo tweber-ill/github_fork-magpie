@@ -171,34 +171,34 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 	}
 
 	// calculate form factors per site (or uniformly for all if only one is given)
-	std::vector<t_cplx> ffacts;
-	ffacts.reserve(N);
 	std::vector<tl2::ExprParser<t_cplx>> magffacts = m_magffacts;
-	for(t_size site_idx = 0; site_idx < std::min(N, magffacts.size()); ++site_idx)
+	std::vector<t_cplx> ffacts;
+	ffacts.reserve(magffacts.size());
+	for(t_size ffact_idx = 0; ffact_idx < magffacts.size(); ++ffact_idx)
 	{
-		if(!magffacts[site_idx])
+		if(!magffacts[ffact_idx])
 		{
 			// use 1 in case the form factor formula is invalid
 			ffacts.push_back(1.);
 
-			if(magffacts[site_idx].GetExprString() != "")
+			if(magffacts[ffact_idx].GetExprString() != "")
 			{
-				TL2_CERR_OPT << "Magdyn error: Invalid form factor for site "
-					<< site_idx << " at Q = " << S.Q_rlu << ", "
-					<< "formula: \"" << magffacts[site_idx].GetExprString() << "\"."
+				TL2_CERR_OPT << "Magdyn error: Invalid form factor #"
+					<< ffact_idx << " at Q = " << S.Q_rlu << ", "
+					<< "formula: \"" << magffacts[ffact_idx].GetExprString() << "\"."
 					<< std::endl;
 			}
 			continue;
 		}
 
 		// evaluate form factor expression
-		magffacts[site_idx].register_var("Q", Q_abs);
-		magffacts[site_idx].register_var("Q2", Q_abs*Q_abs);
-		magffacts[site_idx].register_var("s", Q_abs / (2.*s_twopi));
-		magffacts[site_idx].register_var("s2", std::pow(Q_abs / (2.*s_twopi), 2.));
-		ffacts.push_back(magffacts[site_idx].eval_noexcept());
+		magffacts[ffact_idx].register_var("Q", Q_abs);
+		magffacts[ffact_idx].register_var("Q2", Q_abs*Q_abs);
+		magffacts[ffact_idx].register_var("s", Q_abs / (2.*s_twopi));
+		magffacts[ffact_idx].register_var("s2", std::pow(Q_abs / (2.*s_twopi), 2.));
+		ffacts.push_back(magffacts[ffact_idx].eval_noexcept());
 
-		//std::cout << "ffact(Q = |" << S.Q_rlu << "| rlu = " << Q_abs << " / A) = " << ffacts[site_idx] << std::endl;
+		//std::cout << "ffact(Q = |" << S.Q_rlu << "| rlu = " << Q_abs << " / A) = " << ffacts[ffact_idx] << std::endl;
 	}
 
 	// building the spin correlation functions of equation (47) from (Toth 2015)
@@ -219,15 +219,10 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 
 			// magnetic form factor for site i
 			t_cplx ffact_i = 1., ffactc_i = 1.;
-			if(i < ffacts.size())
+			if(s_i.ffact_idx < ffacts.size())
 			{
-				ffact_i = ffacts[i];
-				ffactc_i = std::conj(ffacts[i]);
-			}
-			else if(i >= ffacts.size() && ffacts.size() == 1)
-			{
-				ffact_i = ffacts[0];
-				ffactc_i = std::conj(ffacts[0]);
+				ffact_i = ffacts[s_i.ffact_idx];
+				ffactc_i = std::conj(ffacts[s_i.ffact_idx]);
 			}
 
 			for(t_size j = 0; j < N; ++j)
@@ -241,15 +236,10 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 
 				// magnetic form factor for site j
 				t_cplx ffact_j = 1., ffactc_j = 1.;
-				if(j < ffacts.size())
+				if(s_j.ffact_idx < ffacts.size())
 				{
-					ffact_j = ffacts[j];
-					ffactc_j = std::conj(ffacts[j]);
-				}
-				else if(j >= ffacts.size() && ffacts.size() == 1)
-				{
-					ffact_j = ffacts[0];
-					ffactc_j = std::conj(ffacts[0]);
+					ffact_j = ffacts[s_j.ffact_idx];
+					ffactc_j = std::conj(ffacts[s_j.ffact_idx]);
 				}
 
 				// pre-factors of equation (44) from (Toth 2015)

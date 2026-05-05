@@ -181,6 +181,7 @@ bool MAGDYN_INST::Load(const boost::property_tree::ptree& node)
 			});
 
 			magnetic_site.sym_idx = site.second.get<t_size>("symmetry_index", 0);
+			magnetic_site.ffact_idx = site.second.get<t_size>("magnetic_form_factor_index", 0);
 
 			magnetic_site.pos[0] = site.second.get<std::string>("position_x", "0");
 			magnetic_site.pos[1] = site.second.get<std::string>("position_y", "0");
@@ -344,8 +345,14 @@ bool MAGDYN_INST::Load(const boost::property_tree::ptree& node)
 	// temperature
 	m_temperature = node.get<t_real>("temperature", -1.);
 
-	// form factor
-	SetMagneticFormFactor(node.get<std::string>("magnetic_form_factor", ""));
+	// magnetic form factors
+	// TODO: use site names not indices
+	t_size num_ffacts = node.get<t_size>("magnetic_form_factors.count", 0);
+	for(t_size i = 0; i < num_ffacts; ++i)
+	{
+		SetMagneticFormFactor(node.get<std::string>(
+			"magnetic_form_factors.index_" + tl2::var_to_str(i), ""));
+	}
 
 	// ordering vector
 	if(auto ordering = node.get_child_optional("ordering"); ordering)
@@ -441,8 +448,15 @@ bool MAGDYN_INST::Save(boost::property_tree::ptree& node) const
 	// temperature
 	node.put<t_real>("temperature", m_temperature);
 
-	// form factor
-	node.put<std::string>("magnetic_form_factor", GetMagneticFormFactor());
+	// magnetic form factors
+	// TODO: use site names not indices
+	node.put<std::string>("magnetic_form_factors.count",
+		tl2::var_to_str(GetMagneticFormFactorCount()));
+	for(t_size i = 0; i < GetMagneticFormFactorCount(); ++i)
+	{
+		node.put<std::string>("magnetic_form_factors.index_" + tl2::var_to_str(i),
+			GetMagneticFormFactor(i));
+	}
 
 	// variables
 	for(const Variable& var : GetVariables())
@@ -465,6 +479,7 @@ bool MAGDYN_INST::Save(boost::property_tree::ptree& node) const
 		itemNode.put<std::string>("position_z", site.pos[2]);
 
 		itemNode.put<t_size>("symmetry_index", site.sym_idx);
+		itemNode.put<t_size>("magnetic_form_factor_index", site.ffact_idx);
 
 		itemNode.put<std::string>("spin_x", site.spin_dir[0]);
 		itemNode.put<std::string>("spin_y", site.spin_dir[1]);
