@@ -48,8 +48,7 @@ MAGDYN_TEMPL void MAGDYN_INST::Clear()
 	// clear temperature, -1: don't use
 	m_temperature = -1.;
 
-	// clear form factor
-	m_magffact_formulas.clear();
+	// clear form factors
 	m_magffacts.clear();
 
 	// clear ordering wave vector
@@ -194,9 +193,9 @@ MAGDYN_TEMPL t_real MAGDYN_INST::GetBoseCutoffEnergy() const
 
 MAGDYN_TEMPL const std::string& MAGDYN_INST::GetMagneticFormFactor(t_size site) const
 {
-	if(site >= m_magffact_formulas.size())
+	if(site >= m_magffacts.size())
 		return "";
-	return m_magffact_formulas[site];
+	return m_magffacts[site].GetExprString();
 }
 
 
@@ -511,15 +510,14 @@ MAGDYN_TEMPL void MAGDYN_INST::SetCholeskyInc(t_real delta)
 
 MAGDYN_TEMPL void MAGDYN_INST::SetMagneticFormFactor(const std::string& ffact, t_size site)
 {
-	if(site >= m_magffact_formulas.size())
+	if(site >= m_magffacts.size())
+		m_magffacts.resize(site + 1);
+
+	if(ffact == "")
 	{
-		m_magffact_formulas.resize(site);
-		m_magffacts.resize(site);
-	}
-	
-	m_magffact_formulas[site] = ffact;
-	if(m_magffact_formulas[site] == "")
+		m_magffacts[site].clear();
 		return;
+	}
 
 	// parse the given formula
 	m_magffacts[site] = GetExprParser();
@@ -531,8 +529,6 @@ MAGDYN_TEMPL void MAGDYN_INST::SetMagneticFormFactor(const std::string& ffact, t
 
 	if(!m_magffacts[site].parse_noexcept(ffact))
 	{
-		m_magffact_formulas[site] = "";
-
 		TL2_CERR_OPT << "Magdyn error: Magnetic form facor formula: \""
 			<< ffact << "\" for site " << site << " could not be parsed."
 			<< std::endl;

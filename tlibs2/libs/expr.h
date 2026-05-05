@@ -645,13 +645,24 @@ class ExprParser
 
 
 public:
-	ExprParser(bool debug=false)
-		: m_debug{debug}, m_asts{}, m_codes{},
-		m_vars{}, m_consts{}, m_funcs0{}, m_funcs1{}, m_funcs2{},
-		m_istr{}, m_lookahead_text{}
+	ExprParser(bool debug = false)
+		: m_ok{false}, m_exprstr{}, m_debug{debug},
+		  m_asts{}, m_codes{}, m_vars{}, m_consts{},
+		  m_funcs0{}, m_funcs1{}, m_funcs2{},
+		  m_istr{}, m_lookahead_text{}
 	{
 		register_funcs();
 		register_consts();
+	}
+
+
+	void clear()
+	{
+		m_exprstr = "";
+		m_ok = false;
+		m_unknown_vars.clear();
+		m_codes.clear();
+		m_asts.clear();
 	}
 
 
@@ -660,13 +671,12 @@ public:
 	 */
 	bool parse(const std::string& expr, bool codegen = true)
 	{
-		m_unknown_vars.clear();
-		m_codes.clear();
-		m_asts.clear();
+		clear();
 
 		// split individual commands by ';'
+		m_exprstr = expr;
 		std::vector<std::string> lines;
-		tl2::get_tokens<std::string, std::string>(expr, ";", lines);
+		tl2::get_tokens<std::string, std::string>(m_exprstr, ";", lines);
 
 		for(const std::string& line : lines)
 		{
@@ -693,8 +703,8 @@ public:
 			if(!at_eof)
 				throw std::underflow_error("Not all input tokens have been consumed.");
 
-			bool ok = !!ast;
-			if(ok)
+			m_ok = !!ast;
+			if(m_ok)
 			{
 				if(m_debug)
 				{
@@ -725,9 +735,9 @@ public:
 			}
 
 			if(m_unknown_vars.size())
-				ok = false;
+				m_ok = false;
 
-			if(!ok)
+			if(!m_ok)
 				return false;
 		}
 
@@ -1000,9 +1010,9 @@ protected:
 	// ------------------------------------------------------------------------
 	enum class Token : int
 	{
-		TOK_NUM		= 1000,
-		TOK_IDENT	= 1001,
-		TOK_END		= 1002,
+		TOK_NUM		  = 1000,
+		TOK_IDENT	  = 1001,
+		TOK_END		  = 1002,
 
 		TOK_INVALID	= 10000,
 	};
@@ -1539,7 +1549,25 @@ public:
 	}
 
 
+	operator bool() const
+	{
+		return m_ok;
+	}
+
+
+	const std::string& GetExprString() const
+	{
+		return m_exprstr;
+	}
+
+
 private:
+	// parser ok?
+	bool m_ok { false };
+
+	// parsed expression string
+	std::string m_exprstr;
+
 	// debug output
 	bool m_debug{ false };
 

@@ -161,15 +161,35 @@ bool MAGDYN_INST::CalcCorrelationsFromHamiltonian(MAGDYN_TYPE::SofQE& S) const
 	tl2::niceprint(std::cout, boson_ops, 1e-4, 4);
 #endif
 
+	// get |Q| in units of A^(-1)
+	t_vec_real Q_invA = 0.;
+	t_real Q_abs = 0.;
+	if(m_magffacts.size())  // only calculate if actually needed
+	{
+		Q_invA = m_xtalB * S.Q_rlu;
+		Q_abs = tl2::norm<t_vec_real>(Q_invA);
+	}
+
 	// calculate form factors per site (or uniformly for all if only one is given)
 	std::vector<t_cplx> ffacts;
 	ffacts.reserve(N);
 	std::vector<tl2::ExprParser<t_cplx>> magffacts = m_magffacts;
 	for(t_size site_idx = 0; site_idx < std::min(N, magffacts.size()); ++site_idx)
 	{
-		// get |Q| in units of A^(-1)
-		t_vec_real Q_invA = m_xtalB * S.Q_rlu;
-		t_real Q_abs = tl2::norm<t_vec_real>(Q_invA);
+		if(!magffacts[site_idx])
+		{
+			// use 1 in case the form factor formula is invalid
+			ffacts.push_back(1.);
+
+			if(magffacts[site_idx].GetExprString() != "")
+			{
+				TL2_CERR_OPT << "Magdyn error: Invalid form factor for site "
+					<< site_idx << " at Q = " << S.Q_rlu << ", "
+					<< "formula: \"" << magffacts[site_idx].GetExprString() << "\"."
+					<< std::endl;
+			}
+			continue;
+		}
 
 		// evaluate form factor expression
 		magffacts[site_idx].register_var("Q", Q_abs);

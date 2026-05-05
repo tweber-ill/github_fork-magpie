@@ -61,8 +61,10 @@ void MAGDYN_INST::CalcPolarisation(const t_vec_real& Q_rlu,
 	t_mat_real rotQ_hkl = UBinv * rotQ * UB;
 	const auto [rotQ_hkl_inv, rotQ_hkl_inv_ok] = tl2::inv(rotQ_hkl);
 	if(!rotQ_hkl_inv_ok)
-		std::cerr << "Magdyn error: Cannot invert Q rotation matrix."
+	{
+		TL2_CERR_OPT << "Magdyn error: Cannot invert Q rotation matrix."
 			<< std::endl;
+	}
 
 	/*using namespace tl2_ops;
 	std::cout << "UB =\n";

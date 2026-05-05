@@ -689,8 +689,7 @@ private:
 	// bose cutoff energy to avoid infinities
 	t_real m_bose_cutoff{ 0.025 };
 
-	// formula for the magnetic form factor
-	std::vector<std::string> m_magffact_formulas{};
+	// formulas for the magnetic form factors
 	std::vector<tl2::ExprParser<t_cplx>> m_magffacts{};
 
 	// crystal lattice
